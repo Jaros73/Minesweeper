@@ -27,18 +27,17 @@ public class GameFieldService : IGameFieldService
     public async Task<IEnumerable<GameFieldDto>> GetGameFields(int gameId)
     {
         var gameFields = await _context.GameFields
-            .Where(gf => gf.GameId == gameId)
+            .Where(x => x.GameId == gameId)
             .ToListAsync();
 
-        return gameFields.Select(gf => new GameFieldDto
+        return gameFields.Select(xy => new GameFieldDto
         {
-            Id = gf.Id,
-            X = gf.X,
-            Y = gf.Y,
-            IsRevealed = gf.IsRevealed,
-            HasMine = gf.HasMine,
-            MinesCount = gf.MinesCount,
-            
+            Id = xy.Id,
+            X = xy.X,
+            Y = xy.Y,
+            IsRevealed = xy.IsRevealed,
+            HasMine = xy.HasMine,
+            MinesCount = xy.MinesCount,           
         });
     }
     /// /// <summary>
