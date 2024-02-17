@@ -44,7 +44,7 @@ public class GameDto
         CreatedDate = game.CreatedDate;
         EndDate = game.EndDate;
 
-        GameFields = game.GameFields.Select(x => new GameFieldDto
+        GameFields = game.GameFields != null ? game.GameFields.Select(x => new GameFieldDto
         {
             Id = x.Id,
             X = x.X,
@@ -52,6 +52,6 @@ public class GameDto
             IsRevealed = x.IsRevealed,
             HasMine = x.HasMine,
             MinesCount = x.MinesCount
-        }).ToList();
+        }).ToList() : new List<GameFieldDto>();
     }
 }

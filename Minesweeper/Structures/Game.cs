@@ -7,6 +7,10 @@ namespace Minesweeper.Structures;
 /// </summary>
 public class Game
 {
+    public Game()
+    {
+        GameFields = new List<GameField>();
+    }
     /// <summary>
     /// Identifikátor hry.
     /// </summary>
