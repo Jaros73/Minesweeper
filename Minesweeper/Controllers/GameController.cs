@@ -115,7 +115,6 @@ public class GameController : Controller
 
             // Vrácení obecné chybové odpovědi
             return StatusCode((int)HttpStatusCode.InternalServerError, "Došlo k chybě při smazání hry.");
-        }
-        
+        }       
     }
 }

@@ -86,13 +86,18 @@ public class GameService : IGameService
     /// <returns>DTO reprezentující nově vytvořenou hru.</returns>
     public async Task<GameDto> Create(GameInputDto input)
     {
+        // Pevná velikost 10x10
+        int width = 10;
+        int height = 10;
+
         var newGame = new Game
         {
             Name = input.Name,
             State = GameState.Active,
             CreatedDate = DateTime.UtcNow,
             // EndDate zůstane null, protože hra teprve začíná
-            MinesCount = input.MinesCount
+            MinesCount = input.MinesCount,
+            GameFields = GenerateGameFields(width, height, input.MinesCount)
         };
 
         _context.Games.Add(newGame);
@@ -132,5 +137,58 @@ public class GameService : IGameService
         return await _context.Games
             .Include(g => g.GameFields)
             .FirstOrDefaultAsync(g => g.Id == id);
+    }
+
+    /// <summary>
+    /// Asynchronně odhalí specifikované herní pole v rámci hry.
+    /// Pokud odhalené pole obsahuje minu, hra se okamžitě ukončí.
+    /// V opačném případě se aktualizuje stav herního pole a pokračuje se v hře.
+    /// </summary>
+    /// <param name="gameId">Identifikátor hry, ve které se má pole odhalit.</param>
+    /// <param name="fieldId">Identifikátor herního pole, které se má odhalit.</param>
+    /// <returns>DTO odhaleného herního pole s aktualizovanými informacemi.</returns>
+    /// <exception cref="InvalidOperationException">Vyvolá výjimku, pokud hra nebo herní pole nebylo nalezeno.</exception>
+    private List<GameField> GenerateGameFields(int width, int height, int minesCount)
+    {
+        var fields = new List<GameField>();
+        var random = new Random();
+
+        // Inicializace herního pole s pevnou velikostí 10x10
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                fields.Add(new GameField { GameId = 0, X = x, Y = y, IsRevealed = false, HasMine = false });
+            }
+        }
+
+        // Náhodné rozmístění min
+        int placedMines = 0;
+        while (placedMines < minesCount)
+        {
+            int position = random.Next(fields.Count);
+            if (!fields[position].HasMine)
+            {
+                fields[position].HasMine = true;
+                placedMines++;
+            }
+        }
+
+        // Výpočet počtu min v okolí pro každé pole
+        foreach (var field in fields)
+        {
+            field.MinesCount = fields.Count(f =>
+                !f.HasMine &&
+                Math.Abs(f.X - field.X) <= 1 &&
+                Math.Abs(f.Y - field.Y) <= 1 &&
+                fields.Any(ff => ff.X == f.X && ff.Y == f.Y && ff.HasMine));
+
+            // Pokud má pole minu, MinesCount nastavíme na -1 pro snadnou identifikaci
+            if (field.HasMine)
+            {
+                field.MinesCount = -1;
+            }
+        }
+        return fields;
     }
 }

@@ -106,4 +106,81 @@ public class GameFieldService : IGameFieldService
             }
         }
     }
+
+    /// <summary>
+    /// Asynchronně zpracuje kliknutí uživatele na herní pole v rámci dané hry. Pokud pole obsahuje minu,
+    /// aktualizuje stav hry na ukončený a nastaví datum a čas ukončení. Pokud pole neobsahuje minu, metoda odhalí toto pole
+    /// a rekurzivně odhalí sousední herní pole, pokud pole nemá žádné sousední miny. Tato operace může vést k odhalení větší
+    /// části herního pole na základě jediného kliknutí, pokud jsou splněny podmínky pro rekurzivní odhalení.
+    /// </summary>
+    /// <param name="gameId">Identifikátor hry, ve které se má pole odhalit.</param>
+    /// <param name="input">DTO obsahující souřadnice X a Y potřebné k identifikaci a zpracování kliknutého herního pole. </param>
+
+    public async Task<GameFieldDto> Click(int gameId, GameClickDto input)
+    {
+        // Načtení hry a jejích herních polí z databáze
+        var game = await _context.Games
+                                 .Include(g => g.GameFields)
+                                 .FirstOrDefaultAsync(g => g.Id == gameId);
+
+        // Kontrola, zda hra existuje a je aktivní
+        if (game == null || game.State != GameState.Active)
+        {
+            throw new InvalidOperationException("Game not found or is not active.");
+        }
+
+        // Nalezení konkrétního herního pole na základě X a Y souřadnic
+        var field = game.GameFields.FirstOrDefault(f => f.X == input.X && f.Y == input.Y);
+        if (field == null)
+        {
+            throw new InvalidOperationException("Field not found.");
+        }
+
+        // Kontrola, zda bylo na pole již kliknuto nebo obsahuje minu
+        if (field.IsRevealed)
+        {
+            return new GameFieldDto
+            {
+                Id = field.Id,
+                X = field.X,
+                Y = field.Y,
+                IsRevealed = field.IsRevealed,
+                HasMine = field.HasMine,
+                MinesCount = field.MinesCount,
+            };
+        }
+
+        // Odhalení pole
+        field.IsRevealed = true;
+
+        // Pokud pole obsahuje minu, aktualizace stavu hry na dokončenou
+        if (field.HasMine)
+        {
+            game.State = GameState.Finished;
+            game.EndDate = DateTime.UtcNow;
+        }
+        else
+        {
+            // Pokud pole neobsahuje minu a má 0 sousedních min, rekurzivní odhalení sousedních polí
+            if (field.MinesCount == 0)
+            {
+                RevealSurroundingFields(game.GameFields.ToList(), field.X, field.Y);
+            }
+        }
+
+        // Uložení změn do databáze
+        await _context.SaveChangesAsync();
+
+        // Vrácení informací o aktuálně kliknutém poli
+        return new GameFieldDto
+        {
+            Id = field.Id,
+            X = field.X,
+            Y = field.Y,
+            IsRevealed = field.IsRevealed,
+            HasMine = field.HasMine,
+            MinesCount = field.MinesCount,
+        };
+    }
+
 }
