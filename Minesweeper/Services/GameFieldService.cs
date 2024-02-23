@@ -3,6 +3,7 @@ using Minesweeper.Interfaces;
 using Minesweeper.Structures;
 using Minesweeper.Pesristance;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
 
 namespace Minesweeper.Services;
 /// <summary>
@@ -11,13 +12,17 @@ namespace Minesweeper.Services;
 public class GameFieldService : IGameFieldService
 {
     private readonly ApplicationContext _context;
+    private readonly IClock _clock;
+    private readonly INotificationService[]? _notificationServices;
     /// <summary>
     /// Inicializuje novou instanci třídy GameFieldService s daným kontextem databáze.
     /// </summary>
     /// <param name="context">Kontext databáze, který se používá pro komunikaci s databází.</param>
-    public GameFieldService(ApplicationContext context)
+    public GameFieldService(ApplicationContext context, IClock clock, IEnumerable<INotificationService>? notificationServices = null)
     {
         _context = context;
+        _clock = clock;
+        _notificationServices = notificationServices?.ToArray();
     }
     /// <summary>
     /// Získá herní pole pro danou hru.
@@ -29,6 +34,14 @@ public class GameFieldService : IGameFieldService
         var gameFields = await _context.GameFields
             .Where(x => x.GameId == gameId)
             .ToListAsync();
+
+        if (gameFields.Any())
+        {
+            foreach (var service in _notificationServices)
+            {
+                await service.SendNotification("HERNIPOLE_ZÍSKÁNO");
+            }
+        }
 
         return gameFields.Select(xy => new GameFieldDto
         {
@@ -70,6 +83,14 @@ public class GameFieldService : IGameFieldService
 
         fieldToReveal.IsRevealed = true;
         await _context.SaveChangesAsync();
+
+        if (fieldToReveal.IsRevealed)
+        {
+            foreach (var service in _notificationServices)
+            {
+                await service.SendNotification("HRA_ODHALENA");
+            }
+        }
 
         return new GameFieldDto
         {
@@ -150,6 +171,8 @@ public class GameFieldService : IGameFieldService
             };
         }
 
+        bool wasClicked = !field.IsRevealed;
+
         // Odhalení pole
         field.IsRevealed = true;
 
@@ -170,6 +193,15 @@ public class GameFieldService : IGameFieldService
 
         // Uložení změn do databáze
         await _context.SaveChangesAsync();
+
+        if (wasClicked)
+        {
+            foreach (var service in _notificationServices)
+            {
+                await service.SendNotification("BYLO_KLIKNUTO");
+            }
+        }
+
 
         // Vrácení informací o aktuálně kliknutém poli
         return new GameFieldDto

@@ -4,6 +4,9 @@ using Minesweeper.Interfaces;
 using Minesweeper.Structures;
 using Minesweeper.Pesristance;
 using Microsoft.EntityFrameworkCore;
+using NodaTime;
+using System.ComponentModel.DataAnnotations;
+using Minesweeper.Extensions;
 
 
 namespace Minesweeper.Services;
@@ -13,13 +16,20 @@ namespace Minesweeper.Services;
 public class GameService : IGameService
 { 
     private readonly ApplicationContext _context;
-    /// <summary>
-    /// Inicializuje novou instanci třídy GameService s daným kontextem databáze.
-    /// </summary>
-    /// <param name="context">Kontext databáze, který se používá pro komunikaci s databází.</param>
-    public GameService(ApplicationContext context)
+    private readonly IClock _clock;
+    private readonly INotificationService[]? _notificationServices;
+
+/// <summary>
+/// Inicializuje novou instanci třídy GameService s daným kontextem databáze, časovým poskytovatelem a volitelnými službami notifikace.
+/// </summary>
+/// <param name="context">Kontext databáze, který se používá pro komunikaci s databází.</param>
+/// <param name="clock">Poskytovatel času, který se používá pro řízení časově závislých operací.</param>
+/// <param name="notificationServices">Kolekce služeb pro odesílání notifikací. Může být null, pokud nejsou poskytnuty žádné služby notifikace.</param>
+    public GameService(ApplicationContext context, IClock clock, IEnumerable<INotificationService>? notificationServices = null)
     {
         _context = context;
+        _clock = clock;
+        _notificationServices = notificationServices?.ToArray();
     }
     /// <summary>
     /// Získá hru podle zadaného identifikátoru.
@@ -30,6 +40,11 @@ public class GameService : IGameService
     {
         var game = await LoadGameAsync(id);
         if (game == null) return null;
+
+        foreach (var service in _notificationServices)
+        {
+            await service.SendNotification("HRA_ZÍSKÁNA");
+        };
 
         return new GameDto(game);
     }
@@ -43,6 +58,14 @@ public class GameService : IGameService
             .Where(x => x.State == GameState.Active)
             .Include(x => x.GameFields) // Přidává načítání herních polí
             .ToListAsync();
+
+        if (games.Any() && _notificationServices is not null)
+        {
+            foreach (var service in _notificationServices)
+            {
+                await service.SendNotification("AKTIVNI_HRY_ZÍSKÁNY");
+            };
+        }
 
         return games.Select(game => new GameDto(game)
         {
@@ -71,6 +94,11 @@ public class GameService : IGameService
         var game = await LoadGameAsync(id);
         if (game == null) return null;
 
+        foreach (var service in _notificationServices)
+        {
+           await service.SendNotification("HRA_NALEZENA");
+        };
+
         return new GameDto(game)
         {
             Id = game.Id,
@@ -86,9 +114,26 @@ public class GameService : IGameService
     /// <returns>DTO reprezentující nově vytvořenou hru.</returns>
     public async Task<GameDto> Create(GameInputDto input)
     {
+        input.Name.ValidateLettersOrNumbers();
+        var validationResults = new List<ValidationResult>();
+        var validationContext = new ValidationContext(input);
+
+        if (!Validator.TryValidateObject(input, validationContext, validationResults, true))
+        {
+            // Převádí výsledky validace na chybové zprávy
+            var errorMessages = validationResults.Select(vr => vr.ErrorMessage).ToList();
+            // Můžete vyvolat výjimku s detailními informacemi o chybách
+            throw new ArgumentException("Neplatná data pro vytvoření hry:");
+        }
+
         // Pevná velikost 10x10
         int width = 10;
         int height = 10;
+
+        if (input.MinesCount < 0 || input.MinesCount > 100)
+        {
+            throw new ArgumentException("Počet min musí být větší než 0 a menší než 100.");
+        }
 
         var newGame = new Game
         {
@@ -102,7 +147,11 @@ public class GameService : IGameService
 
         _context.Games.Add(newGame);
         await _context.SaveChangesAsync();
-
+         if (_notificationServices is not null)
+        {
+            foreach (var service in _notificationServices) { 
+            await service.SendNotification("HRA_VYTVOŘENA");};
+        }
         return new GameDto(newGame)
         {
             Id = newGame.Id,
@@ -121,6 +170,11 @@ public class GameService : IGameService
         var game = await _context.Games.FindAsync(id);
         if (game == null) return;
 
+        foreach (var service in _notificationServices)
+        {
+            await service.SendNotification("HRA_ODSTRANĚNA");
+        };
+
         _context.Games.Remove(game);
         await _context.SaveChangesAsync();
     }
@@ -132,12 +186,22 @@ public class GameService : IGameService
     /// Vrátí instanci hry s načtenými herními poli, pokud hra s daným identifikátorem existuje.
     /// V opačném případě vrátí null.
     /// </returns>
-    private async Task<Game> LoadGameAsync(int id)
+    internal async Task<Game> LoadGameAsync(int id)
     {
-        return await _context.Games
+        var game = await _context.Games
             .Include(g => g.GameFields)
             .FirstOrDefaultAsync(g => g.Id == id);
+
+        if (game != null)
+        {
+            foreach (var service in _notificationServices)
+            {
+                await service.SendNotification("HRA_NAČTENA");
+            }
+        }
+        return game;
     }
+
 
     /// <summary>
     /// Asynchronně odhalí specifikované herní pole v rámci hry.
@@ -189,6 +253,7 @@ public class GameService : IGameService
                 field.MinesCount = -1;
             }
         }
+
         return fields;
     }
 }

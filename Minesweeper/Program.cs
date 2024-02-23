@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using Minesweeper.Pesristance;
 using Microsoft.OpenApi.Models;
+using NodaTime;
 
 namespace Minesweeper;
 
@@ -18,6 +19,7 @@ public class Program
         // Registrace služeb
         builder.Services.AddTransient<IGameService, GameService>();
         builder.Services.AddTransient<IGameFieldService, GameFieldService>();
+        builder.Services.AddSingleton<IClock>(NodaTime.SystemClock.Instance);
 
         // Konfigurace Swagger
         builder.Services.AddSwaggerGen(c =>

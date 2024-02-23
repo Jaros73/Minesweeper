@@ -10,8 +10,10 @@ public class GameInputDto
     /// <summary>
     /// Název hry.
     /// </summary>
+    /// 
+    [RegularExpression(@"^[a-zA-Z0-9\s]+$", ErrorMessage = "Název hry může obsahovat pouze alfanumerické znaky a mezery.")]
     [Required(ErrorMessage = "Název hry je povinný.")]
-    [StringLength(100, ErrorMessage = "Název hry musí být mezi 1 a 100 znaky.", MinimumLength = 1)]
+    [StringLength(25, ErrorMessage = "Název hry musí být mezi 1 a 25 znaky.", MinimumLength = 1)]
     public string Name { get; set; }
 
     /// <summary>
