@@ -41,11 +41,13 @@ public class GameService : IGameService
         var game = await LoadGameAsync(id);
         if (game == null) return null;
 
-        foreach (var service in _notificationServices)
+        if ( _notificationServices is not null)
         {
-            await service.SendNotification("HRA_ZÍSKÁNA");
-        };
-
+            foreach (var service in _notificationServices)
+            {
+                await service.SendNotification("HRA_ZÍSKÁNA");
+            };
+        }
         return new GameDto(game);
     }
     /// <summary>
@@ -94,11 +96,13 @@ public class GameService : IGameService
         var game = await LoadGameAsync(id);
         if (game == null) return null;
 
-        foreach (var service in _notificationServices)
-        {
-           await service.SendNotification("HRA_NALEZENA");
-        };
-
+        if (_notificationServices is not null) 
+        { 
+            foreach (var service in _notificationServices)
+            {
+                await service.SendNotification("HRA_NALEZENA");
+            };
+        }
         return new GameDto(game)
         {
             Id = game.Id,
@@ -169,12 +173,13 @@ public class GameService : IGameService
     {
         var game = await _context.Games.FindAsync(id);
         if (game == null) return;
-
-        foreach (var service in _notificationServices)
-        {
-            await service.SendNotification("HRA_ODSTRANĚNA");
-        };
-
+        if (_notificationServices is not null)
+        { 
+            foreach (var service in _notificationServices)
+            {
+                await service.SendNotification("HRA_ODSTRANĚNA");
+            };
+        }
         _context.Games.Remove(game);
         await _context.SaveChangesAsync();
     }
@@ -192,7 +197,7 @@ public class GameService : IGameService
             .Include(g => g.GameFields)
             .FirstOrDefaultAsync(g => g.Id == id);
 
-        if (game != null)
+        if (game != null && _notificationServices is not null)
         {
             foreach (var service in _notificationServices)
             {

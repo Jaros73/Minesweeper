@@ -35,7 +35,7 @@ public class GameFieldService : IGameFieldService
             .Where(x => x.GameId == gameId)
             .ToListAsync();
 
-        if (gameFields.Any())
+        if (gameFields.Any() && _notificationServices is not null)
         {
             foreach (var service in _notificationServices)
             {
@@ -84,7 +84,7 @@ public class GameFieldService : IGameFieldService
         fieldToReveal.IsRevealed = true;
         await _context.SaveChangesAsync();
 
-        if (fieldToReveal.IsRevealed)
+        if (fieldToReveal.IsRevealed && _notificationServices is not null)
         {
             foreach (var service in _notificationServices)
             {
@@ -194,7 +194,7 @@ public class GameFieldService : IGameFieldService
         // Uložení změn do databáze
         await _context.SaveChangesAsync();
 
-        if (wasClicked)
+        if (wasClicked && _notificationServices is not null)
         {
             foreach (var service in _notificationServices)
             {
