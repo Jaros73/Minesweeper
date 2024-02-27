@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.Eventing.Reader;
 using System.Net;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Minesweeper.Api;
 using Minesweeper.Interfaces;
@@ -13,6 +14,7 @@ namespace Minesweeper.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class GameFieldController : ControllerBase
 {
     private readonly IGameFieldService _service;

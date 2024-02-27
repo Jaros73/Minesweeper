@@ -204,14 +204,15 @@ public class GameService : IGameService
 
 
     /// <summary>
-    /// Asynchronně odhalí specifikované herní pole v rámci hry.
-    /// Pokud odhalené pole obsahuje minu, hra se okamžitě ukončí.
-    /// V opačném případě se aktualizuje stav herního pole a pokračuje se v hře.
+    /// Generuje a inicializuje seznam herních polí s definovanou šířkou, výškou a počtem min.
+    /// Každé pole je inicializováno jako neodhalené a bez miny. Poté jsou miny náhodně rozmístěny
+    /// po celém herním poli, přičemž každé pole dostane informaci o počtu sousedních min.
+    /// Pro pole s minou je počet sousedních min nastaven na -1.
     /// </summary>
-    /// <param name="gameId">Identifikátor hry, ve které se má pole odhalit.</param>
-    /// <param name="fieldId">Identifikátor herního pole, které se má odhalit.</param>
-    /// <returns>DTO odhaleného herního pole s aktualizovanými informacemi.</returns>
-    /// <exception cref="InvalidOperationException">Vyvolá výjimku, pokud hra nebo herní pole nebylo nalezeno.</exception>
+    /// <param name="width">Šířka herního pole.</param>
+    /// <param name="height">Výška herního pole.</param>
+    /// <param name="minesCount">Celkový počet min, které mají být rozmístěny na herním poli.</param>
+    /// <returns>Seznam herních polí s příslušnou inicializací a rozložením min.</returns>
     private List<GameField> GenerateGameFields(int width, int height, int minesCount)
     {
         var fields = new List<GameField>();

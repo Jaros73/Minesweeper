@@ -30,6 +30,20 @@ namespace Minesweeper.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Users",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserName = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
+                    Password = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Users", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "GameFields",
                 columns: table => new
                 {
@@ -71,6 +85,9 @@ namespace Minesweeper.Migrations
         {
             migrationBuilder.DropTable(
                 name: "GameFields");
+
+            migrationBuilder.DropTable(
+                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "Games");

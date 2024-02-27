@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Minesweeper.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20240207205919_Miny")]
+    [Migration("20240224214441_Miny")]
     partial class Miny
     {
         /// <inheritdoc />
@@ -20,7 +20,7 @@ namespace Minesweeper.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.1")
+                .HasAnnotation("ProductVersion", "8.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -90,6 +90,29 @@ namespace Minesweeper.Migrations
                         .IsUnique();
 
                     b.ToTable("GameFields");
+                });
+
+            modelBuilder.Entity("Minesweeper.Structures.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("Minesweeper.Structures.GameField", b =>

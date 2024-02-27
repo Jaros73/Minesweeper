@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Minesweeper.Api;
 using Minesweeper.Interfaces;
@@ -12,6 +13,7 @@ namespace Minesweeper.Controllers;
 
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class GameController : Controller
 {
     private readonly IGameService _service;

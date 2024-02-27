@@ -21,7 +21,10 @@ public class ApplicationContext : DbContext
     /// Tabulka herních polí v databázi.
     /// </summary>
     public DbSet<GameField> GameFields { get; set; }
-
+    /// <summary>
+    /// Získá/nastaví DbSet uživatelů, který reprezentuje tabulku Users v databázi.
+    /// </summary>
+    public DbSet<User> Users { get; set; } = null!;
     /// <summary>
     /// Konfigurace databázového modelu.
     /// </summary>
@@ -38,7 +41,7 @@ public class ApplicationContext : DbContext
         modelBuilder.Entity<Game>()
             .Property(x => x.Name)
             .IsRequired()
-            .HasMaxLength(100);
+            .HasMaxLength(25);
 
         // Vytvoření indexu pro rychlejší vyhledávání podle nějakého kritéria
         modelBuilder.Entity<Game>()
@@ -50,5 +53,4 @@ public class ApplicationContext : DbContext
             .HasIndex(x => new { x.GameId, x.X, x.Y })
             .IsUnique(); // Zajistí, že každé pole ve hře má unikátní pozici
     }
-
 }
