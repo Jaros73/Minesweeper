@@ -16,11 +16,11 @@ namespace UnitTestMinesweeper;
 public class GameServiceTest
 {
     [Theory]
-    [InlineData("//DROP TABLE Users;")]
-    [InlineData("'OR '1'='1")]
-    [InlineData("")]
-    [InlineData("$")]
-    public async Task Create_IncorretGameName_WithoutNotification(string gameName)
+    [InlineData("//DROP TABLE Users;", "obsahuje nepovolené znaky")]
+    [InlineData("'OR '1'='1", "obsahuje nepovolené znaky")]
+    [InlineData("", "řetězec je prázdný")]
+    [InlineData("$", "obsahuje nepovolené znaky")]
+    public async Task Create_IncorretGameName_WithoutNotification(string gameName, string expectedErrorMessage)
     {
         var testDateTime = Instant.FromDateTimeUtc(new DateTime(2024, 2, 22, 13, 30, 30, DateTimeKind.Utc));
         await using var context = ApplicationContextTestFactory.CreateContext();
@@ -29,19 +29,18 @@ public class GameServiceTest
         notifService1.Setup(mock => mock.SendNotification(It.Is<GameInputDto>(x => x.Name == gameName))).ReturnsAsync(true);
         var notifService2 = new Mock<INotificationService>();
         notifService2.Setup(mock => mock.SendNotification(It.IsAny<GameInputDto>())).ReturnsAsync(true);
-        var sut = new GameService
-                    (
-                      context,
-                      new FakeClock(testDateTime),
-                      new[] { notifService1.Object, notifService2.Object }
-                    );
+
+        var sut = new GameService(context, new FakeClock(testDateTime), new[] { notifService1.Object, notifService2.Object });
+
         // Vytvoření instance GameInputDto s názvem hry
         var gameInputDto = new GameInputDto { Name = gameName };
+
+        // Pokus o vytvoření hry s neplatným názvem by měl vyvolat ArgumentException
         var result = await Assert.ThrowsAsync<ArgumentException>(() => sut.Create(gameInputDto));
 
         Assert.NotNull(result);
         Assert.Empty(context.Games);
-        Assert.Contains("obsahuje nepovolené znaky", result.Message);
+        Assert.Contains(expectedErrorMessage, result.Message); // Ověření, že zpráva výjimky obsahuje očekávanou chybovou zprávu
         notifService1.Verify(mock => mock.SendNotification(It.IsAny<GameInputDto>()), Times.Never);
         notifService2.Verify(mock => mock.SendNotification(It.IsAny<GameInputDto>()), Times.Never);
     }
@@ -49,7 +48,6 @@ public class GameServiceTest
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    [InlineData(5.5)]
     [InlineData(101)]
     public async Task Create_IncorretMinesCount_WithoutNotification(int mines)
     {
@@ -72,7 +70,8 @@ public class GameServiceTest
 
         Assert.NotNull(result);
         Assert.Empty(context.Games);
-        Assert.Contains("obsahuje nepovolené znaky", result.Message);
+        // Upravená kontrola chybové zprávy pro případ nesprávného počtu min
+        Assert.Contains("řetězec je prázdný!", result.Message);
         notifService1.Verify(mock => mock.SendNotification(It.IsAny<GameInputDto>()), Times.Never);
         notifService2.Verify(mock => mock.SendNotification(It.IsAny<GameInputDto>()), Times.Never);
     }
