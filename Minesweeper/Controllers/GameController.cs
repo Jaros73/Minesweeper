@@ -18,14 +18,16 @@ public class GameController : Controller
 {
     private readonly IGameService _service;
     private readonly ILogger<GameController> _logger;
+    private readonly INotificationService _notificationService;
 
     /// <summary>
     /// Inicializuje novou instanci třídy GameController.
     /// </summary>
     /// <param name="service">Poskytuje přístup k operacím souvisejícím s hrami.</param>
     /// <param name="logger">Poskytuje mechanismus pro logování.</param>
-    public GameController(IGameService service, ILogger<GameController> logger)
-    { _service = service; _logger = logger; }
+    /// <param name="notificationService">Poskytuje mechanismus pro notifikace testu.</param>
+    public GameController(IGameService service, ILogger<GameController> logger, INotificationService notificationService)
+    { _service = service; _logger = logger; _notificationService = notificationService; }
 
     /// <summary>
     /// Získání konkrétní hry na základě unikátního klíče.
@@ -82,6 +84,7 @@ public class GameController : Controller
         if (game == null) return BadRequest("Nelze vytvořit hru.");
 
             _logger.LogInformation("Hra s ID {game.Id} byla úspěšně vytvořena.", game.Id);
+            await _notificationService.SendNotification("HRA_VYTVOŘENA");
 
             return CreatedAtAction(nameof(Get), new { id = game.Id }, game);
         }

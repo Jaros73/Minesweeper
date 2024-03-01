@@ -123,5 +123,4 @@ public class GameFieldController : ControllerBase
             return StatusCode((int)HttpStatusCode.InternalServerError, "Došlo k chybě při zpracování kliknutí.");
         }
     }
-
 }
